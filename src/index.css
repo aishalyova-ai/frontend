@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* import Bootstrap CSS after Tailwind or before, try both if issues persist */
+@import "bootstrap/dist/css/bootstrap.min.css";
