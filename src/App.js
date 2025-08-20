@@ -25,6 +25,7 @@ import SkillExchangeRequestsPage from './pages/user/SkillExchangeRequestsPage';
 import ExchangeDetailsPage from "./pages/user/ExchangeDetailsPage"; // This is the correct component import
 import ApplyProjectForm from "./pages/user/ApplyProjectForm";
 import UserApplications from "./pages/user/UserApplications";
+import ProjectDetailsPage from "./pages/user/ProjectDetailsPage";
 
 // Employer Pages
 import EmployerDashboard from './pages/employer/Dashboard';
@@ -58,15 +59,12 @@ export default function App() {
         <Route path="/dashboard/user" element={<UserDashboard />} />
         <Route path="/dashboard/user/browse-skills" element={<BrowseSkills />} />
         <Route path="/dashboard/user/projects" element={<UserProjects />} />
-        {/* Make sure this profile route can handle a dynamic ID if you link to it from other places */}
         <Route path="/dashboard/user/profile" element={<UserProfile />} />
         <Route path="/dashboard/user/messages" element={<Messages />} />
         <Route path="/dashboard/user/chat-page/:chatId?" element={<ChatPage />} />
         <Route path="/dashboard/user/SkillExchangeRequestsPage" element={<SkillExchangeRequestsPage />} />
-        
-        {/* CORRECTED ROUTE for Exchange Details */}
         <Route path="/dashboard/user/exchange-details/:exchangeId" element={<ExchangeDetailsPage />} />
-        
+         <Route path="/dashboard/user/projects/:id" element={<ProjectDetailsPage />}/>
         <Route path="/dashboard/user/projects/:projectId/apply" element={<ApplyProjectForm />} />
         <Route path="/dashboard/user/user-applications" element={<UserApplications/>}/>
 

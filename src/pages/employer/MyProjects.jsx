@@ -560,33 +560,28 @@ function MyProjects() {
             <p className="col-span-full text-center text-gray-500 text-lg py-10">No projects found for this selection.</p>
           ) : (
             (groupedProjects[activeTab] || []).map((project) => (
-             // ... inside the .map((project) => (...)
-             
-<div
-    key={project.id}
-    className="bg-white shadow-md rounded-lg p-6 relative group flex flex-col justify-between hover:shadow-lg transition-shadow duration-300"
->
-    <div>
-        {/* Status Badge */}
-        <span
-            className={`absolute top-4 right-4 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(
-                project.status
-            )}`}
-        >
-            {getStatusIcon(project.status)}
-            {project.status ? project.status.charAt(0).toUpperCase() + project.status.slice(1) : 'Unknown'}
-        </span>
+              <div
+                key={project.id}
+                className="bg-white shadow-md rounded-lg p-6 relative group flex flex-col justify-between hover:shadow-lg transition-shadow duration-300"
+              >
+                <div>
+                  {/* Status Badge */}
+                  <span
+                      className={`absolute top-4 right-4 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(
+                          project.status
+                      )}`}
+                  >
+                    {getStatusIcon(project.status)}
+                    {project.status ? project.status.charAt(0).toUpperCase() + project.status.slice(1) : 'Unknown'}
+                  </span>
 
-        <div className="flex justify-between items-start mb-2">
-            <h3 className="text-xl font-semibold text-gray-900 pr-16">{project.title}</h3>
-            {/* --- THIS IS THE LINE TO CHANGE --- */}
-            <div className="absolute top-4 right-1.5 opacity-100 transition-opacity duration-200 z-20"> {/* Changed from opacity-0 */}
-                <DropdownMenu projectId={project.id} />
-            </div>
-            {/* --- END CHANGE --- */}
-        </div>
-
-
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900 pr-16">{project.title}</h3>
+                    <div className="absolute top-4 right-1.5 opacity-100 transition-opacity duration-200 z-20">
+                      <DropdownMenu projectId={project.id} />
+                    </div>
+                  </div>
+                  
                   <p className="mt-1 text-gray-600 text-sm line-clamp-3 mb-4">
                     {project.description}
                   </p>

@@ -1,27 +1,21 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Search, MapPin, X, CheckCircle, Award } from "lucide-react";
+import { Search, MapPin, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// Helper function to determine status badge color
+// Helper for status colors
 const getStatusColor = (status) => {
-  switch (status?.toUpperCase()) {
-    case "PENDING":
-      return "bg-yellow-100 text-yellow-800";
-    case "ACCEPTED":
-      return "bg-blue-100 text-blue-800";
-    case "REJECTED":
-      return "bg-red-100 text-red-800";
-    case "COMPLETED":
-      return "bg-green-100 text-green-800";
-    case "WITHDRAWN":
-      return "bg-gray-200 text-gray-600";
-    default:
-      return "bg-gray-100 text-gray-800";
+  switch (status.toUpperCase()) {
+    case "PENDING": return "bg-yellow-100 text-yellow-800";
+    case "ACCEPTED": return "bg-blue-100 text-blue-800";
+    case "REJECTED": return "bg-red-100 text-red-800";
+    case "COMPLETED": return "bg-green-100 text-green-800";
+    case "WITHDRAWN": return "bg-gray-200 text-gray-600";
+    default: return "bg-gray-100 text-gray-800";
   }
 };
 
-// Header component
+// Header
 const Header = () => (
   <header className="bg-white shadow-sm border-b mb-6">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,6 +26,7 @@ const Header = () => (
           <Link to="/dashboard/employer/my-projects" className="text-gray-700 hover:text-indigo-600">Projects</Link>
           <Link to="/dashboard/employer/applications" className="text-gray-700 hover:text-indigo-600">Applications</Link>
           <Link to="/dashboard/employer/payments" className="text-gray-700 hover:text-indigo-600">Payments</Link>
+          <Link to="/dashboard/user/messages" className="text-gray-700 hover:text-indigo-600">Messages</Link>
         </nav>
         <Link to="/logout" className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-gray-100 text-gray-900 hover:bg-gray-200">Logout</Link>
       </div>
@@ -39,8 +34,8 @@ const Header = () => (
   </header>
 );
 
-// Single application card (for Pending/Rejected/Withdrawn)
-const ApplicationCard = ({ app, onViewDetails, onStatusChange }) => (
+// Single application card
+const ApplicationCard = ({ app, onViewDetails, onStatusChange, onApproveWork, onReleasePayment }) => (
   <div className="bg-white rounded-lg shadow p-6 flex flex-col gap-4">
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-4">
@@ -60,6 +55,13 @@ const ApplicationCard = ({ app, onViewDetails, onStatusChange }) => (
     <div className="text-gray-600">
       <p><strong>Project:</strong> {app.projectTitle}</p>
       <p><strong>Budget:</strong> ${app.proposedBudget}</p>
+      {app.status.toUpperCase() === "COMPLETED" && app.submittedWork && (
+        <p className="text-sm mt-2"><strong>Submitted Work:</strong>{" "}
+          <a href={app.submittedWork} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+            View Submission
+          </a>
+        </p>
+      )}
       <p className="line-clamp-2 text-sm"><strong>Cover Letter:</strong> {app.coverLetter}</p>
       <div className="flex flex-wrap gap-2 mt-2">
         {Array.isArray(app.skills) && app.skills.map((skill, idx) => (
@@ -70,57 +72,34 @@ const ApplicationCard = ({ app, onViewDetails, onStatusChange }) => (
 
     <div className="flex flex-wrap gap-3">
       <button onClick={() => onViewDetails(app)} className="text-indigo-600 hover:underline">View Details</button>
-      {app.status === "PENDING" && (
+
+      {app.status.toUpperCase() === "PENDING" && (
         <>
-          <button onClick={() => onStatusChange(app.id, "ACCEPTED")} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Accept</button>
-          <button onClick={() => onStatusChange(app.id, "REJECTED")} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Reject</button>
+          <button onClick={() => onStatusChange(app.id, "ACCEPTED")} className="text-green-600 hover:underline">Accept</button>
+          <button onClick={() => onStatusChange(app.id, "REJECTED")} className="text-red-600 hover:underline">Reject</button>
         </>
+      )}
+
+      {app.status.toUpperCase() === "ACCEPTED" && app.projectWorkSubmitted && (
+        <>
+          {!app.workApproved && (
+            <button onClick={() => onApproveWork(app.projectId)} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Approve Work</button>
+          )}
+          {app.workApproved && !app.paymentReleased && (
+            <button onClick={() => onReleasePayment(app.projectId)} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Release Payment</button>
+          )}
+        </>
+      )}
+
+      {app.status.toUpperCase() === "COMPLETED" && (
+        <span className="text-sm text-green-700 font-medium">Completed by {app.applicantName}</span>
       )}
     </div>
   </div>
 );
 
-// New component for displaying completed projects
-const CompletedProjectCard = ({ app }) => (
-  <div className="bg-white rounded-lg shadow p-6 flex flex-col gap-4">
-    <div className="flex justify-between items-center">
-      <div className="flex items-center gap-4">
-        <Award className="w-8 h-8 text-yellow-500" />
-        <div>
-          <h4 className="text-lg font-semibold">
-            {app.projectTitle} <span className="text-xs text-gray-400">(ID: {app.projectId})</span>
-          </h4>
-          <p className="text-sm text-gray-500">
-            Completed by: {app.assignedUsername || app.applicantName}
-          </p>
-        </div>
-      </div>
-      <span className={`text-sm px-2 py-1 rounded ${getStatusColor("COMPLETED")}`}>Completed</span>
-    </div>
-    <div className="text-gray-600">
-      <p><strong>Budget:</strong> ${app.proposedBudget}</p>
-      <p className="mt-2 text-sm">
-        <strong>Project Submission:</strong>
-        {app.workSubmissionUrl ? (
-          <a href={app.workSubmissionUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 hover:underline">
-            View
-          </a>
-        ) : (
-          <span className="ml-2 text-gray-500">N/A</span>
-        )}
-      </p>
-    </div>
-    <Link
-      to={`/projects/${app.projectId}`}
-      className="text-indigo-600 hover:underline text-sm font-medium"
-    >
-      View Full Details
-    </Link>
-  </div>
-);
-
-// Modal for application details
-const ApplicationDetailsModal = ({ application, onClose, onStatusChange }) => {
+// Modal
+const ApplicationDetailsModal = ({ application, onClose, onStatusChange, onApproveWork, onReleasePayment }) => {
   if (!application) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -135,6 +114,13 @@ const ApplicationDetailsModal = ({ application, onClose, onStatusChange }) => {
         <p className="mb-2"><strong>Project:</strong> {application.projectTitle}</p>
         <p className="mb-2"><strong>Budget:</strong> ${application.proposedBudget}</p>
         <p className="mb-2"><strong>Timeline:</strong> {application.proposedTimeline}</p>
+        {application.status.toUpperCase() === "COMPLETED" && application.submittedWork && (
+          <p className="mb-2"><strong>Submitted Work:</strong>{" "}
+            <a href={application.submittedWork} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              View Submission
+            </a>
+          </p>
+        )}
         <p className="mb-2"><strong>Cover Letter:</strong><br />{application.coverLetter}</p>
         <p className="mb-2">
           <strong>Answers to Questions:</strong>
@@ -153,11 +139,24 @@ const ApplicationDetailsModal = ({ application, onClose, onStatusChange }) => {
         </p>
 
         <div className="flex flex-wrap gap-3">
-          {application.status === "PENDING" && (
+          {application.status.toUpperCase() === "PENDING" && (
             <>
               <button onClick={() => onStatusChange(application.id, "ACCEPTED")} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Accept</button>
               <button onClick={() => onStatusChange(application.id, "REJECTED")} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Reject</button>
             </>
+          )}
+          {application.status.toUpperCase() === "ACCEPTED" && application.projectWorkSubmitted && (
+            <>
+              {!application.workApproved && (
+                <button onClick={() => onApproveWork(application.projectId)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Approve Work</button>
+              )}
+              {application.workApproved && !application.paymentReleased && (
+                <button onClick={() => onReleasePayment(application.projectId)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Release Payment</button>
+              )}
+            </>
+          )}
+          {application.status.toUpperCase() === "COMPLETED" && (
+            <span className="text-sm text-green-700 font-medium">Completed by {application.applicantName}</span>
           )}
         </div>
       </div>
@@ -165,17 +164,17 @@ const ApplicationDetailsModal = ({ application, onClose, onStatusChange }) => {
   );
 };
 
-// Main Employer Applications Page
+// Main page
 const EmployerApplicationsPage = () => {
   const [applications, setApplications] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [projects, setProjects] = useState([]);
 
   const token = localStorage.getItem("jwtToken");
 
-  // Fetch all applications
   useEffect(() => {
     const fetchApplications = async () => {
       try {
@@ -183,32 +182,40 @@ const EmployerApplicationsPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Debugging line to see the API response
-        console.log("API response data:", res.data);
+        console.log("Raw applications data:", res.data); // 🔥 Debug
 
-        // The API returns a flat list of applications, we'll map them for easier access
-        const mappedApps = res.data.map(app => ({
-          ...app,
-          // Safely access nested properties using optional chaining
-          applicantName: `${app.applicant?.firstName || ''} ${app.applicant?.lastName || ''}`,
-          applicantAvatar: app.applicant?.avatarUrl,
-          applicantLocation: app.applicant?.location,
-          applicantId: app.applicant?.id,
-          projectTitle: app.project?.title,
-          projectId: app.project?.id,
-          workSubmissionUrl: app.workSubmissionUrl || "",
-          skills: app.skillsOffered,
-        }));
+        const appsArray = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data.applications)
+            ? res.data.applications
+            : [];
+
+        const mappedApps = appsArray.map(app => {
+          const applicant = app.applicant || {};
+          return {
+            ...app,
+            status: app.status?.toUpperCase() || (app.completed ? "COMPLETED" : "PENDING"),
+            submittedWork: app.work_submission_url || app.project?.work_submission_url || "",
+            applicantId: applicant.id,
+            applicantName: `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim(),
+            applicantLocation: applicant.location || "N/A",
+            applicantAvatar: applicant.avatarUrl || "/avatar.svg",
+            skills: app.skillsOffered || app.skills || [],
+            workApproved: app.workApproved || false,
+            paymentReleased: app.paymentReleased || false,
+            projectId: app.project?.id || app.projectId || app.id,
+          };
+        });
+
+        console.log("Mapped applications:", mappedApps); // 🔥 Debug
 
         setApplications(mappedApps);
+        setProjects([...new Set(mappedApps.map((app) => app.projectTitle))]);
       } catch (error) {
         console.error("Failed to load applications", error);
       }
     };
-
-    if (token) {
-      fetchApplications();
-    }
+    if (token) fetchApplications();
   }, [token]);
 
   const updateStatus = async (applicationId, newStatus) => {
@@ -218,51 +225,65 @@ const EmployerApplicationsPage = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Re-fetch applications to update the UI after a successful status change
-      const res = await axios.get("http://localhost:8080/api/applications/employer", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const updatedApps = res.data.map(app => ({
-        ...app,
-        applicantName: `${app.applicant?.firstName || ''} ${app.applicant?.lastName || ''}`,
-        applicantAvatar: app.applicant?.avatarUrl,
-        applicantLocation: app.applicant?.location,
-        applicantId: app.applicant?.id,
-        projectTitle: app.project?.title,
-        projectId: app.project?.id,
-        workSubmissionUrl: app.workSubmissionUrl || "",
-        skills: app.skillsOffered,
-      }));
-      setApplications(updatedApps);
+      setApplications(prev =>
+        prev.map(app => app.id === applicationId ? { ...app, status: newStatus.toUpperCase() } : app)
+      );
       setSelectedApplication(null);
     } catch (err) {
       console.error("Failed to update application status", err);
     }
   };
 
-  // Filter applications for the "Completed Projects" section
-  const completedProjects = applications.filter(app => app.status === "COMPLETED");
+  const approveWork = async (projectId) => {
+    try {
+      await axios.put(
+        `http://localhost:8080/api/employer/projects/${projectId}/approve-work`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setApplications(prev =>
+        prev.map(app => app.projectId === projectId ? { ...app, workApproved: true, status: "COMPLETED" } : app)
+      );
+    } catch (err) {
+      console.error("Failed to approve work", err);
+    }
+  };
 
-  // Get all applications that are not completed or assigned for the "Other Applications" section
-  const otherApplications = applications.filter(app => app.status !== "COMPLETED" && app.status !== "ASSIGNED" && app.status !== "ACCEPTED");
+  const releasePayment = async (projectId) => {
+    try {
+      await axios.put(
+        `http://localhost:8080/api/employer/projects/${projectId}/release-payment`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setApplications(prev =>
+        prev.map(app => app.projectId === projectId ? { ...app, paymentReleased: true } : app)
+      );
+    } catch (err) {
+      console.error("Failed to release payment", err);
+    }
+  };
 
-  // Apply filters to the applications list
-  const filteredApplications = otherApplications.filter(app => {
-    const matchesSearch =
-      (app.applicantName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (app.projectTitle || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (Array.isArray(app.skills) && app.skills.some(skill =>
-        (skill || "").toLowerCase().includes(searchQuery.toLowerCase())
-      ));
+  // Filter & sort
+  const filteredApplications = applications
+    .filter(app => {
+      const matchesSearch =
+        (app.applicantName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (app.projectTitle || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (Array.isArray(app.skills) && app.skills.some(skill =>
+          (skill || "").toLowerCase().includes(searchQuery.toLowerCase())
+        ));
 
-    const matchesProject = projectFilter === "all" || app.projectTitle === projectFilter;
-    const matchesStatus = statusFilter === "all" || (app.status || "").toUpperCase() === statusFilter.toUpperCase();
+      const matchesProject = projectFilter === "all" || app.projectTitle === projectFilter;
+      const matchesStatus = statusFilter === "all" || (app.status || "").toUpperCase() === statusFilter.toUpperCase();
 
-    return matchesSearch && matchesProject && matchesStatus;
-  });
-
-  // Get unique project titles for the filter dropdown
-  const uniqueProjectTitles = [...new Set(applications.map(app => app.projectTitle))];
+      return matchesSearch && matchesProject && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (a.status === "COMPLETED" && b.status !== "COMPLETED") return -1;
+      if (b.status === "COMPLETED" && a.status !== "COMPLETED") return 1;
+      return 0;
+    });
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -283,33 +304,22 @@ const EmployerApplicationsPage = () => {
         </div>
         <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="border px-3 py-2 rounded">
           <option value="all">All Projects</option>
-          {uniqueProjectTitles.map((proj, idx) => <option key={idx} value={proj}>{proj}</option>)}
+          {projects.map((proj, idx) => <option key={idx} value={proj}>{proj}</option>)}
         </select>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border px-3 py-2 rounded">
           <option value="all">All Statuses</option>
           <option value="PENDING">Pending</option>
+          <option value="ACCEPTED">Accepted</option>
           <option value="REJECTED">Rejected</option>
+          <option value="COMPLETED">Completed</option>
           <option value="WITHDRAWN">Withdrawn</option>
         </select>
       </div>
 
-      {/* New section for completed projects */}
-      <h2 className="text-xl font-semibold mb-3 mt-8">Completed Projects</h2>
-      <div className="grid gap-6 mb-6">
-        {completedProjects.length > 0 ? (
-          completedProjects.map(app => (
-            <CompletedProjectCard key={app.id} app={app} />
-          ))
-        ) : (
-          <p className="text-gray-500">No completed projects found.</p>
-        )}
-      </div>
-
-      {/* Existing section for other applications */}
-      <h2 className="text-xl font-semibold mb-3 mt-8">Other Applications ({statusFilter === 'all' ? 'All' : statusFilter})</h2>
+      {/* Applications */}
       <div className="grid gap-6">
         {filteredApplications.length === 0 ? (
-          <p className="text-gray-500">No applications found with the selected filters.</p>
+          <p className="text-gray-500">No applications found.</p>
         ) : (
           filteredApplications.map(app => (
             <ApplicationCard
@@ -317,6 +327,8 @@ const EmployerApplicationsPage = () => {
               app={app}
               onViewDetails={setSelectedApplication}
               onStatusChange={updateStatus}
+              onApproveWork={approveWork}
+              onReleasePayment={releasePayment}
             />
           ))
         )}
@@ -326,6 +338,8 @@ const EmployerApplicationsPage = () => {
         application={selectedApplication}
         onClose={() => setSelectedApplication(null)}
         onStatusChange={updateStatus}
+        onApproveWork={approveWork}
+        onReleasePayment={releasePayment}
       />
     </div>
   );

@@ -599,7 +599,7 @@ async function handleTabChange(tab) {
                           </div>
                           <div className="flex justify-between items-center">
                             <Link
-                              to={`/projects/${project.id}`}
+                              to={`/dashboard/user/projects/${project.id}`}
                               className="text-indigo-600 hover:underline text-sm font-medium"
                             >
                               View Details

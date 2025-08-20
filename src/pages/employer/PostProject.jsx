@@ -1,6 +1,5 @@
-// src/pages/user/PostProject.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Removed Link as it's no longer used
+import { useNavigate } from 'react-router-dom';
 import {
     DollarSign,
     Clock,
@@ -11,14 +10,14 @@ import {
     BookOpen,
     ListChecks,
     Send
-} from 'lucide-react'; // Importing icons for better UI
+} from 'lucide-react';
 
 export default function PostProject() {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         category: '',
-        projectType: 'Fixed Price', // Changed default to match backend DTO enum values
+        projectType: 'Fixed Price',
         budgetMin: '',
         budgetMax: '',
         hourlyRate: '',
@@ -36,7 +35,7 @@ export default function PostProject() {
     const [newQuestion, setNewQuestion] = useState('');
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    const [loading, setLoading] = useState(false); // Added loading state
+    const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
@@ -83,10 +82,10 @@ export default function PostProject() {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission and page reload
+        e.preventDefault();
         setError(null);
         setSuccessMessage(null);
-        setLoading(true); // Set loading to true on submission start
+        setLoading(true);
 
         const token = localStorage.getItem('jwtToken');
 
@@ -97,33 +96,29 @@ export default function PostProject() {
             return;
         }
 
-        // Prepare payload based on projectType
         const payload = { ...formData };
 
-        // Ensure numeric fields are numbers and handle nulls for irrelevant fields
         if (payload.projectType === 'Fixed Price') {
-            payload.hourlyRate = null; // Set to null if not applicable
-            payload.budgetMin = parseFloat(payload.budgetMin) || 0; // Ensure it's a number, default to 0 if empty
-            payload.budgetMax = parseFloat(payload.budgetMax) || 0; // Ensure it's a number, default to 0 if empty
+            payload.hourlyRate = null;
+            payload.budgetMin = parseFloat(payload.budgetMin) || 0;
+            payload.budgetMax = parseFloat(payload.budgetMax) || 0;
         } else if (payload.projectType === 'Hourly') {
-            payload.budgetMin = null; // Set to null if not applicable
-            payload.budgetMax = null; // Set to null if not applicable
-            payload.hourlyRate = parseFloat(payload.hourlyRate) || 0; // Ensure it's a number, default to 0 if empty
+            payload.budgetMin = null;
+            payload.budgetMax = null;
+            payload.hourlyRate = parseFloat(payload.hourlyRate) || 0;
         }
 
-        // Ensure skills and screeningQuestions are arrays (even if empty)
         payload.skills = Array.isArray(payload.skills) ? payload.skills : [];
         payload.screeningQuestions = Array.isArray(payload.screeningQuestions) ? payload.screeningQuestions : [];
 
-        // Convert empty strings to null for optional fields if your DTO expects null for absence
         Object.keys(payload).forEach(key => {
             if (payload[key] === '') {
                 payload[key] = null;
             }
         });
 
-        console.log("Sending project payload:", payload); // Debugging: log the payload
-        console.log("Authorization Token:", token); // Debugging: log the token
+        console.log("Sending project payload:", payload);
+        console.log("Authorization Token:", token);
 
         try {
             const response = await fetch("http://localhost:8080/api/employer/projects", {
@@ -141,7 +136,6 @@ export default function PostProject() {
                     const errorData = await response.json();
                     errorMessage = errorData.message || errorMessage;
                 } catch (jsonError) {
-                    // Fallback for non-JSON error responses (e.g., plain text 403)
                     if (response.status === 403) {
                         errorMessage = "Access Denied: You do not have permission to post projects. Ensure you are logged in as an Employer.";
                     } else if (response.status === 401) {
@@ -159,7 +153,6 @@ export default function PostProject() {
             setSuccessMessage('Project posted successfully!');
             console.log('Project submitted:', data);
 
-            // Clear form after success
             setFormData({
                 title: '', description: '', category: '', projectType: 'Fixed Price',
                 budgetMin: '', budgetMax: '', hourlyRate: '', duration: '',
@@ -169,7 +162,6 @@ export default function PostProject() {
             setNewSkill('');
             setNewQuestion('');
 
-            // Redirect to my projects page after a short delay
             setTimeout(() => {
                 navigate('/dashboard/employer/my-projects');
             }, 1500);
@@ -178,9 +170,12 @@ export default function PostProject() {
             console.error('Error submitting project:', err.message);
             setError(err.message);
         } finally {
-            setLoading(false); // Always set loading to false after request completes
+            setLoading(false);
         }
     };
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -265,33 +260,33 @@ export default function PostProject() {
                         {formData.projectType === 'Fixed Price' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label htmlFor="budgetMin" className="block text-sm font-medium text-gray-700">Min Budget ($)</label>
+                                    <label htmlFor="budgetMin" className="block text-sm font-medium text-gray-700">Min Budget (Tsh)</label>
                                     <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Tsh</div>
                                         <input
                                             type="number"
                                             name="budgetMin"
                                             id="budgetMin"
                                             value={formData.budgetMin}
                                             onChange={handleInputChange}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-10"
-                                            placeholder="e.g., 500"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-12"
+                                            placeholder="e.g., 500000"
                                             required={formData.projectType === 'Fixed Price'}
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="budgetMax" className="block text-sm font-medium text-gray-700">Max Budget ($)</label>
+                                    <label htmlFor="budgetMax" className="block text-sm font-medium text-gray-700">Max Budget (Tsh)</label>
                                     <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Tsh</div>
                                         <input
                                             type="number"
                                             name="budgetMax"
                                             id="budgetMax"
                                             value={formData.budgetMax}
                                             onChange={handleInputChange}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-10"
-                                            placeholder="e.g., 1000"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-12"
+                                            placeholder="e.g., 1000000"
                                             required={formData.projectType === 'Fixed Price'}
                                         />
                                     </div>
@@ -301,17 +296,17 @@ export default function PostProject() {
 
                         {formData.projectType === 'Hourly' && (
                             <div>
-                                <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700">Hourly Rate ($)</label>
+                                <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700">Hourly Rate (Tsh)</label>
                                 <div className="relative">
-                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Tsh</div>
                                     <input
                                         type="number"
                                         name="hourlyRate"
                                         id="hourlyRate"
                                         value={formData.hourlyRate}
                                         onChange={handleInputChange}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-10"
-                                        placeholder="e.g., 25"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-12"
+                                        placeholder="e.g., 25000"
                                         required={formData.projectType === 'Hourly'}
                                     />
                                 </div>
@@ -370,6 +365,7 @@ export default function PostProject() {
                                     onChange={handleInputChange}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-10"
                                     required
+                                    min={today} // This is the key change to prevent past dates
                                 />
                             </div>
                         </div>
@@ -512,8 +508,8 @@ export default function PostProject() {
                         {/* Submit Button */}
                         <div>
                             <button
-                                type="submit" // THIS IS THE CRITICAL CHANGE
-                                disabled={loading} // Disable button while loading
+                                type="submit"
+                                disabled={loading}
                                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                             >
                                 {loading ? (

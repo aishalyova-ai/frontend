@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Calendar, Edit, Plus, X, User, Camera, CheckCircle, Award, Star } from "lucide-react";
@@ -361,6 +359,7 @@ const handleSaveProfile = async () => {
     }
   };
 
+  
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -379,7 +378,7 @@ const handleSaveProfile = async () => {
         throw new Error('No authentication token found. Please log in.');
       }
 
-      const response = await fetch("http://localhost:8080/api/user/change-password", {
+      const response = await fetch("http://localhost:8080/api/user/password", {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -393,25 +392,30 @@ const handleSaveProfile = async () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to change password' }));
-        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+        // Specifically check for the "Incorrect old password." message from the backend.
+        if (errorData.message === "Incorrect old password.") {
+            setStatusMessage({ type: 'error', message: 'The current password you entered is incorrect.' });
+        } else {
+            // Fallback for other errors
+            throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+        }
+      } else {
+        setStatusMessage({ type: 'success', message: 'Password updated successfully!' });
+        setPasswordChange({
+          currentPassword: '',
+          newPassword: '',
+          confirmNewPassword: ''
+        });
       }
 
-      setStatusMessage({ type: 'success', message: 'Password updated successfully!' });
-      setPasswordChange({
-        currentPassword: '',
-        newPassword: '',
-        confirmNewPassword: ''
-      });
-
-    } catch (err) {
-      console.error("Error changing password:", err);
-      setError(err.message);
-      setStatusMessage({ type: 'error', message: `Error changing password: ${err.message}` });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    } catch (err) {
+      console.error("Error changing password:", err);
+      setError(err.message);
+      setStatusMessage({ type: 'error', message: `Error changing password: ${err.message}` });
+    } finally {
+      setLoading(false);
+    }
+  };
   const getProgressBarColor = (value) => {
     if (value >= 80) return 'bg-green-500';
     if (value >= 60) return 'bg-blue-500';
